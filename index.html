@@ -8,7 +8,7 @@
 <script src="config.js"></script>
 <script src="common.js"></script>
 <style>
-  :root { --orange: #e07b1a; --orange-l: #fff3e6; --green: #2f6b3a; --green-d: #1f4f28; --green-l: #eef5ef; --line: #d6e2d8; --gray: #6b6b6b; --red: #c33; --bg: #f6f7f5; }
+  :root { --orange: #d4834a; --orange-d: #9a5320; --orange-l: #fdf5ee; --green: #4f9363; --green-d: #2f6b3a; --green-l: #f0f6f1; --line: #d6e2d8; --gray: #6b6b6b; --red: #c33; --bg: #f6f7f5; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: #222; font-family: "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif; font-size: 15px; line-height: 1.5; }
   a { color: var(--green); }
@@ -36,8 +36,8 @@
   .steps li .when { color: var(--gray); font-size: 12px; text-align: right; }
   .steps li.ng .what { color: #888; }
   .tag { display: inline-block; flex: none; font-size: 11px; font-weight: bold; border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
-  .tag.ok { background: var(--green); color: #fff; }
-  .tag.now { background: var(--orange); color: #fff; }
+  .tag.ok { background: #e1efe4; color: var(--green-d); }
+  .tag.now { background: #fbe4d2; color: var(--orange-d); }
   .tag.ng { background: #eee; color: #888; }
 
   /* 進み具合のステップ表示（大項目ごと） */
@@ -55,7 +55,7 @@
   .stepper li.part { color: var(--green-d); }
   .stepper li.part .dot { border-color: var(--green); color: var(--green); }
   .stepper li.now { color: var(--orange); }
-  .stepper li.now .dot { border-color: var(--orange); color: var(--orange); box-shadow: 0 0 0 5px rgba(224, 123, 26, .18); }
+  .stepper li.now .dot { border-color: var(--orange); color: var(--orange); box-shadow: 0 0 0 4px rgba(212, 131, 74, .15); }
   .stepper.small { margin: 12px 0 2px; }
   .stepper.small li { font-size: 12px; }
   .stepper.small li::before { top: 12px; height: 3px; }
@@ -69,7 +69,7 @@
   .kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 14px; }
   .kv dt { color: var(--gray); }
   .kv dd { margin: 0; }
-  .next { margin: 12px 0; padding: 12px 14px; background: var(--orange-l); border: 2px solid var(--orange); border-radius: 12px; font-size: 15px; color: #7a3d00; }
+  .next { margin: 12px 0; padding: 12px 14px; background: var(--orange-l); border: 1px solid #ecc3a3; border-radius: 12px; font-size: 15px; color: var(--orange-d); }
   .next.all { background: var(--green); border-color: var(--green); color: #fff; font-weight: bold; text-align: center; }
   .major { margin-top: 18px; }
   .major h2 { display: flex; justify-content: space-between; align-items: center; font-size: 16px; margin: 0 0 8px; }
@@ -83,10 +83,10 @@
   .tl .mark { position: absolute; left: 0; top: 12px; width: 29px; height: 29px; border-radius: 50%; border: 3px solid #ccc; background: #fff;
     display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; font-size: 15px; box-sizing: border-box; }
   .tl li.done .mark { background: var(--green); border-color: var(--green); }
-  .tl li.cur .mark { border-color: var(--orange); box-shadow: 0 0 0 5px rgba(224, 123, 26, .18); }
+  .tl li.cur .mark { border-color: var(--orange); box-shadow: 0 0 0 4px rgba(212, 131, 74, .15); }
   .tl .box { border-radius: 12px; padding: 12px 14px; background: #fff; border: 1px solid var(--line); }
-  .tl li.done .box { background: var(--green-l); border-color: #b9d6be; }
-  .tl li.cur .box { border: 2px solid var(--orange); box-shadow: 0 2px 8px rgba(224, 123, 26, .15); }
+  .tl li.done .box { background: var(--green-l); border-color: #cfe3d4; }
+  .tl li.cur .box { border: 2px solid #ecc3a3; box-shadow: 0 2px 8px rgba(212, 131, 74, .10); }
   .tl li.todo .box { background: #fafafa; border-style: dashed; }
   .tl .t { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 17px; font-weight: bold; }
   .tl li.done .t { color: var(--green-d); }
@@ -179,6 +179,9 @@ function stepperHtml(plan, small) {
   }).join('') + '</ol>';
 }
 function nextStep(plan) { return state.steps.find(s => !(plan.status[s.key] || {}).done); }
+function taskName(s) { return s.minor.replace(/\s*完了$/, '') || s.minor; }
+// 「大項目：作業名」。同じ名前なら1回だけ（例：土入れ：ポット入れ／播種）
+function fullTask(s, sep) { const t = taskName(s); return t === s.major ? t : s.major + sep + t; }
 function planName(p) { return p.v['品番'] + ' ' + p.v['品目'] + ' ' + p.v['品種']; }
 function toast(msg, isErr) {
   const t = document.getElementById('toast');
@@ -200,7 +203,7 @@ function renderList() {
     const steps = state.steps.map(s => {
       const st = p.status[s.key] || {};
       const tag = st.done ? '<span class="tag ok">完了</span>' : nx && nx.key === s.key ? '<span class="tag now">次の作業</span>' : '<span class="tag ng">未完了</span>';
-      return `<li class="${st.done ? 'ok' : 'ng'}">${tag}<span class="what">${esc(s.major)}：${esc(s.minor)}</span>
+      return `<li class="${st.done ? 'ok' : 'ng'}">${tag}<span class="what">${esc(fullTask(s, '：'))}</span>
         <span class="when">${st.done ? esc(st.time) + (st.person ? ' ' + esc(st.person) : '') + (st.qty !== '' && st.qty != null ? ' / ' + esc(st.qty) + esc(s.unit) : '') : ''}</span></li>`;
     }).join('');
     return `<div class="card">
@@ -244,14 +247,14 @@ function renderPlan(plan) {
         if (r.qty !== '' && r.qty != null) info += '　' + esc(r.qty) + esc(s.unit) + diffText(plan, s, r.qty);
         if (r.memo) info += '<br>' + esc(r.memo);
         return `<li class="done"><span class="mark">✓</span><div class="box">
-          <div class="t">${esc(s.minor)}<span class="tag ok">完了</span></div><div class="info">${info}</div>
+          <div class="t">${esc(taskName(s))}<span class="tag ok">完了</span></div><div class="info">${info}</div>
           <button class="undo" data-undo="${esc(s.key)}">取り消す</button></div></li>`;
       }
       const isNext = nx && nx.key === s.key;
       return `<li class="${isNext ? 'cur' : 'todo'}"><span class="mark"></span><div class="box">
-        <div class="t">${esc(s.minor)}${isNext ? '<span class="tag now">次の作業</span>' : '<span class="tag ng">未完了</span>'}</div>
+        <div class="t">${esc(taskName(s))}${isNext ? '<span class="tag now">次の作業</span>' : '<span class="tag ng">未完了</span>'}</div>
         <div class="desc">${esc(s.note)}</div>
-        <button class="do" data-do="${esc(s.key)}">${esc(s.minor)}にする</button></div></li>`;
+        <button class="do" data-do="${esc(s.key)}">${esc(taskName(s))}を完了にする</button></div></li>`;
     }).join('');
     return `<section class="major"><h2>${esc(m)}${head}</h2><ol class="tl">${items}</ol></section>`;
   }).join('');
@@ -272,7 +275,7 @@ function renderPlan(plan) {
         </dl>
       </div>
       ${stepperHtml(plan, false)}
-      <div class="next ${nx ? '' : 'all'}">${nx ? '次の作業：<b>' + esc(nx.major) + '　' + esc(nx.minor) + '</b>' : '✓ すべての工程が完了しました'}</div>
+      <div class="next ${nx ? '' : 'all'}">${nx ? '次の作業：<b>' + esc(fullTask(nx, '　')) + '</b>' : '✓ すべての工程が完了しました'}</div>
       ${sections}
       <div class="who">担当者：<b>${esc(getName() || '（未設定）')}</b> <button id="rename">変更</button></div>
     </main>`;
@@ -280,7 +283,7 @@ function renderPlan(plan) {
   document.querySelectorAll('[data-do]').forEach(b => b.onclick = () => openSheet(plan, state.steps.find(s => s.key === b.dataset.do)));
   document.querySelectorAll('[data-undo]').forEach(b => b.onclick = () => {
     const s = state.steps.find(x => x.key === b.dataset.undo);
-    if (confirm('「' + s.minor + '」を取り消しますか？')) send(plan, s, '取消', '', getName(), '');
+    if (confirm('「' + taskName(s) + '」の完了を取り消しますか？')) send(plan, s, '取消', '', getName(), '');
   });
   document.getElementById('rename').onclick = () => {
     const v = prompt('担当者の名前', getName());
@@ -296,7 +299,7 @@ function diffText(plan, step, qty) {
 
 function openSheet(plan, step) {
   const m = document.getElementById('modal');
-  document.getElementById('m-title').textContent = step.minor;
+  document.getElementById('m-title').textContent = taskName(step) + 'を完了にする';
   document.getElementById('m-plan').textContent = plan.id + '　' + planName(plan);
   const qw = document.getElementById('m-qty-wrap');
   const qi = document.getElementById('m-qty');
@@ -324,7 +327,7 @@ function send(plan, step, action, qty, person, memo) {
   busy = true;
   toast('記録しています…');
   postRecord({ id: plan.id, major: step.major, minor: step.minor, op: action, qty: qty, person: person, memo: memo })
-    .then(s => { busy = false; state = s; render(); toast(action === '完了' ? '「' + step.minor + '」を記録しました' : '取り消しました'); })
+    .then(s => { busy = false; state = s; render(); toast(action === '完了' ? '「' + taskName(step) + '」を完了にしました' : '取り消しました'); })
     .catch(e => { busy = false; toast(e.message, true); });
 }
 
