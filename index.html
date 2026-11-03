@@ -70,6 +70,10 @@
   .kv dt { color: var(--gray); }
   .kv dd { margin: 0; }
   .next { margin: 12px 0; padding: 12px 14px; background: var(--orange-l); border: 1px solid #ecc3a3; border-radius: 12px; font-size: 15px; color: var(--orange-d); }
+  .next b { font-size: 17px; }
+  .next .fdone { color: var(--gray); opacity: .7; }
+  .next .flater { color: var(--orange-d); opacity: .75; }
+  .next .farrow { margin: 0 6px; color: var(--orange); }
   .next.all { background: var(--green); border-color: var(--green); color: #fff; font-weight: bold; text-align: center; }
   .major { margin-top: 18px; }
   .major h2 { display: flex; justify-content: space-between; align-items: center; font-size: 16px; margin: 0 0 8px; }
@@ -193,6 +197,15 @@ function nextStep(plan) { return state.steps.find(s => !(plan.status[s.key] || {
 function taskName(s) { return s.minor.replace(/\s*完了$/, '') || s.minor; }
 // 「大項目：作業名」。同じ名前なら1回だけ（例：土入れ：ポット入れ／播種）
 function fullTask(s, sep) { const t = taskName(s); return t === s.major ? t : s.major + sep + t; }
+// 次の作業の大項目の中の作業を、上流（左）→ 下流（右）の順に並べる。次の作業を太字、終わった作業は ✓ で薄く
+// 例：ポット入れ → 土入れ（ポット入れが次）／ ✓ポット入れ → 土入れ（土入れが次）
+function nextFlowHtml(plan, nx) {
+  return state.steps.filter(s => s.major === nx.major).map(s => {
+    if (s.key === nx.key) return '<b>' + esc(taskName(s)) + '</b>';
+    const done = (plan.status[s.key] || {}).done;
+    return '<span class="' + (done ? 'fdone' : 'flater') + '">' + (done ? '✓' : '') + esc(taskName(s)) + '</span>';
+  }).join('<span class="farrow">→</span>');
+}
 function planName(p) { return p.v['品番'] + ' ' + p.v['品目'] + ' ' + p.v['品種']; }
 function toast(msg, isErr) {
   const t = document.getElementById('toast');
@@ -286,7 +299,7 @@ function renderPlan(plan) {
         </dl>
       </div>
       ${stepperHtml(plan, false)}
-      <div class="next ${nx ? '' : 'all'}">${nx ? '次の作業：<b>' + esc(fullTask(nx, '　')) + '</b>' : '✓ すべての工程が完了しました'}</div>
+      <div class="next ${nx ? '' : 'all'}">${nx ? '次の作業：' + nextFlowHtml(plan, nx) : '✓ すべての工程が完了しました'}</div>
       ${sections}
     </main>`;
 
