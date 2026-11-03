@@ -8,7 +8,7 @@
 <script src="config.js"></script>
 <script src="common.js"></script>
 <style>
-  :root { --green: #2f6b3a; --green-d: #1f4f28; --green-l: #eef5ef; --line: #d6e2d8; --gray: #6b6b6b; --red: #c33; --bg: #f6f7f5; }
+  :root { --orange: #e07b1a; --orange-l: #fff3e6; --green: #2f6b3a; --green-d: #1f4f28; --green-l: #eef5ef; --line: #d6e2d8; --gray: #6b6b6b; --red: #c33; --bg: #f6f7f5; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: #222; font-family: "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif; font-size: 15px; line-height: 1.5; }
   a { color: var(--green); }
@@ -30,15 +30,36 @@
   .qr .id { font-size: 11px; color: var(--gray); font-family: monospace; }
   .name { font-weight: bold; font-size: 16px; }
   .meta { font-size: 13px; color: #444; }
-  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 6px; }
-  .pill { border-radius: 999px; padding: 2px 10px; font-size: 12px; border: 1px solid var(--line); background: #fafafa; color: var(--gray); }
-  .pill.part { background: #fff8e1; border-color: #e6cf8a; color: #8a6d00; }
-  .pill.done { background: var(--green); border-color: var(--green); color: #fff; }
-  .steps { list-style: none; margin: 0; padding: 0; font-size: 13px; }
-  .steps li { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; border-top: 1px dashed #e5e5e5; }
+  .steps { list-style: none; margin: 10px 0 0; padding: 0; font-size: 13px; }
+  .steps li { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px dashed #e5e5e5; }
+  .steps li .what { flex: 1; }
   .steps li .when { color: var(--gray); font-size: 12px; text-align: right; }
-  .steps li.ok .what::before { content: "✓ "; color: var(--green); font-weight: bold; }
-  .steps li.ng .what::before { content: "・ "; color: #bbb; }
+  .steps li.ng .what { color: #888; }
+  .tag { display: inline-block; flex: none; font-size: 11px; font-weight: bold; border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+  .tag.ok { background: var(--green); color: #fff; }
+  .tag.now { background: var(--orange); color: #fff; }
+  .tag.ng { background: #eee; color: #888; }
+
+  /* 進み具合のステップ表示（大項目ごと） */
+  .stepper { display: flex; list-style: none; margin: 14px 0 4px; padding: 0; }
+  .stepper li { flex: 1; position: relative; text-align: center; color: #999; font-size: 13px; }
+  .stepper li::before { content: ""; position: absolute; z-index: 0; top: 16px; left: -50%; right: 50%; height: 4px; background: #ddd; }
+  .stepper li:first-child::before { display: none; }
+  .stepper li.done + li::before { background: var(--green); }
+  .stepper .dot { position: relative; z-index: 1; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;
+    background: #fff; border: 3px solid #ccc; font-weight: bold; font-size: 15px; color: #999; }
+  .stepper .lb { display: block; margin-top: 4px; font-weight: bold; }
+  .stepper .ct { display: block; font-size: 11px; }
+  .stepper li.done { color: var(--green); }
+  .stepper li.done .dot { background: var(--green); border-color: var(--green); color: #fff; }
+  .stepper li.part { color: var(--green-d); }
+  .stepper li.part .dot { border-color: var(--green); color: var(--green); }
+  .stepper li.now { color: var(--orange); }
+  .stepper li.now .dot { border-color: var(--orange); color: var(--orange); box-shadow: 0 0 0 5px rgba(224, 123, 26, .18); }
+  .stepper.small { margin: 12px 0 2px; }
+  .stepper.small li { font-size: 12px; }
+  .stepper.small li::before { top: 12px; height: 3px; }
+  .stepper.small .dot { width: 28px; height: 28px; font-size: 13px; border-width: 2px; }
   .open { display: block; text-align: center; margin-top: 10px; padding: 8px; border-radius: 8px; background: var(--green-l); text-decoration: none; font-weight: bold; }
   .note { margin-top: 16px; font-size: 12px; color: var(--gray); }
 
@@ -48,19 +69,34 @@
   .kv { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 14px; }
   .kv dt { color: var(--gray); }
   .kv dd { margin: 0; }
-  .next { margin: 12px 0; padding: 10px 12px; background: #fff8e1; border: 1px solid #e6cf8a; border-radius: 10px; font-size: 14px; }
-  .next.all { background: var(--green-l); border-color: var(--line); color: var(--green-d); }
-  .major { margin-top: 14px; }
-  .major h2 { display: flex; justify-content: space-between; align-items: baseline; font-size: 16px; margin: 0 0 6px; padding-left: 8px; border-left: 4px solid var(--green); }
-  .major h2 .count { font-size: 13px; color: var(--gray); font-weight: normal; }
-  .step { width: 100%; display: block; text-align: left; margin-bottom: 8px; border-radius: 12px; padding: 14px; font-size: 17px; font-family: inherit; }
-  button.step { background: var(--green); color: #fff; border: none; font-weight: bold; cursor: pointer; }
-  button.step .desc { display: block; font-size: 12px; font-weight: normal; opacity: .85; margin-top: 2px; }
-  div.step.done { background: #fff; border: 1px solid var(--line); color: var(--green-d); }
-  div.step.done .t { font-weight: bold; }
-  div.step.done .t::before { content: "✓ "; }
-  div.step.done .info { font-size: 13px; color: #444; margin-top: 2px; }
-  div.step.done .undo { float: right; font-size: 12px; color: var(--gray); background: none; border: none; text-decoration: underline; cursor: pointer; padding: 0; }
+  .next { margin: 12px 0; padding: 12px 14px; background: var(--orange-l); border: 2px solid var(--orange); border-radius: 12px; font-size: 15px; color: #7a3d00; }
+  .next.all { background: var(--green); border-color: var(--green); color: #fff; font-weight: bold; text-align: center; }
+  .major { margin-top: 18px; }
+  .major h2 { display: flex; justify-content: space-between; align-items: center; font-size: 16px; margin: 0 0 8px; }
+  .major h2 .tag { font-size: 12px; }
+  /* 小項目：左の丸と縦線でつなぐ */
+  .tl { list-style: none; margin: 0; padding: 0; }
+  .tl > li { position: relative; padding: 0 0 10px 40px; }
+  .tl > li::before { content: ""; position: absolute; left: 13px; top: 30px; bottom: 0; width: 3px; background: #ddd; }
+  .tl > li:last-child::before { display: none; }
+  .tl > li.done::before { background: var(--green); }
+  .tl .mark { position: absolute; left: 0; top: 12px; width: 29px; height: 29px; border-radius: 50%; border: 3px solid #ccc; background: #fff;
+    display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; font-size: 15px; box-sizing: border-box; }
+  .tl li.done .mark { background: var(--green); border-color: var(--green); }
+  .tl li.cur .mark { border-color: var(--orange); box-shadow: 0 0 0 5px rgba(224, 123, 26, .18); }
+  .tl .box { border-radius: 12px; padding: 12px 14px; background: #fff; border: 1px solid var(--line); }
+  .tl li.done .box { background: var(--green-l); border-color: #b9d6be; }
+  .tl li.cur .box { border: 2px solid var(--orange); box-shadow: 0 2px 8px rgba(224, 123, 26, .15); }
+  .tl li.todo .box { background: #fafafa; border-style: dashed; }
+  .tl .t { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 17px; font-weight: bold; }
+  .tl li.done .t { color: var(--green-d); }
+  .tl li.todo .t { color: #777; }
+  .tl .desc { font-size: 12px; color: var(--gray); margin-top: 2px; }
+  .tl .info { font-size: 13px; color: #333; margin-top: 4px; }
+  .tl .do { width: 100%; margin-top: 10px; padding: 12px; border-radius: 10px; font-size: 16px; font-weight: bold; font-family: inherit; cursor: pointer;
+    background: #fff; color: var(--green); border: 2px solid var(--green); }
+  .tl li.cur .do { background: var(--orange); border-color: var(--orange); color: #fff; padding: 14px; font-size: 17px; }
+  .tl .undo { margin-top: 6px; font-size: 12px; color: var(--gray); background: none; border: none; text-decoration: underline; cursor: pointer; padding: 0; font-family: inherit; }
   .who { margin-top: 18px; font-size: 13px; color: var(--gray); }
   .who button { font-size: 13px; background: none; border: none; color: var(--green); text-decoration: underline; cursor: pointer; }
 
@@ -127,6 +163,21 @@ function majorProgress(plan, major) {
   const done = ss.filter(s => (plan.status[s.key] || {}).done).length;
   return { done, total: ss.length };
 }
+// 大項目の状態：done（全部完了）／now（次の作業がある）／part（一部完了）／todo（未着手）
+function majorState(plan, m, nx) {
+  const pr = majorProgress(plan, m);
+  if (pr.done === pr.total) return 'done';
+  if (nx && nx.major === m) return 'now';
+  return pr.done > 0 ? 'part' : 'todo';
+}
+function stepperHtml(plan, small) {
+  const nx = nextStep(plan);
+  return `<ol class="stepper${small ? ' small' : ''}">` + majors().map((m, i) => {
+    const st = majorState(plan, m, nx), pr = majorProgress(plan, m);
+    return `<li class="${st}"><span class="dot">${st === 'done' ? '✓' : i + 1}</span><span class="lb">${esc(m)}</span>
+      <span class="ct">${st === 'done' ? '完了' : pr.done + ' / ' + pr.total}</span></li>`;
+  }).join('') + '</ol>';
+}
 function nextStep(plan) { return state.steps.find(s => !(plan.status[s.key] || {}).done); }
 function planName(p) { return p.v['品番'] + ' ' + p.v['品目'] + ' ' + p.v['品種']; }
 function toast(msg, isErr) {
@@ -144,16 +195,12 @@ function refresh() {
 
 // ---------- 一覧（PC） ----------
 function renderList() {
-  const ms = majors();
   const cards = state.plans.map(p => {
-    const pills = ms.map(m => {
-      const pr = majorProgress(p, m);
-      const cls = pr.done === pr.total ? 'done' : pr.done > 0 ? 'part' : '';
-      return `<span class="pill ${cls}">${esc(m)} ${pr.done}/${pr.total}</span>`;
-    }).join('');
+    const nx = nextStep(p);
     const steps = state.steps.map(s => {
       const st = p.status[s.key] || {};
-      return `<li class="${st.done ? 'ok' : 'ng'}"><span class="what">${esc(s.major)}：${esc(s.minor)}</span>
+      const tag = st.done ? '<span class="tag ok">完了</span>' : nx && nx.key === s.key ? '<span class="tag now">次の作業</span>' : '<span class="tag ng">未完了</span>';
+      return `<li class="${st.done ? 'ok' : 'ng'}">${tag}<span class="what">${esc(s.major)}：${esc(s.minor)}</span>
         <span class="when">${st.done ? esc(st.time) + (st.person ? ' ' + esc(st.person) : '') + (st.qty !== '' && st.qty != null ? ' / ' + esc(st.qty) + esc(s.unit) : '') : ''}</span></li>`;
     }).join('');
     return `<div class="card">
@@ -165,7 +212,7 @@ function renderList() {
           <div class="meta">播種 ${esc(p.v['播種予定日'])} → ポット ${esc(p.v['ポット使用日'])} → 鉢上げ ${esc(p.v['鉢上予定日'])}</div>
         </div>
       </div>
-      <div class="pills">${pills}</div>
+      ${stepperHtml(p, true)}
       <ul class="steps">${steps}</ul>
       <a class="open" href="${esc(planUrl(p.id))}">この計画を開く</a>
     </div>`;
@@ -187,19 +234,26 @@ function renderList() {
 function renderPlan(plan) {
   const nx = nextStep(plan);
   const sections = majors().map(m => {
-    const pr = majorProgress(plan, m);
+    const st = majorState(plan, m, nx), pr = majorProgress(plan, m);
+    const head = st === 'done' ? '<span class="tag ok">完了</span>' : st === 'now' ? '<span class="tag now">作業中</span>'
+      : '<span class="tag ng">' + pr.done + ' / ' + pr.total + '</span>';
     const items = state.steps.filter(s => s.major === m).map(s => {
-      const st = plan.status[s.key] || {};
-      if (st.done) {
-        let info = esc(st.time) + (st.person ? '　' + esc(st.person) : '');
-        if (st.qty !== '' && st.qty != null) info += '　' + esc(st.qty) + esc(s.unit) + diffText(plan, s, st.qty);
-        if (st.memo) info += '<br>' + esc(st.memo);
-        return `<div class="step done"><button class="undo" data-undo="${esc(s.key)}">取り消す</button>
-          <div class="t">${esc(s.minor)}</div><div class="info">${info}</div></div>`;
+      const r = plan.status[s.key] || {};
+      if (r.done) {
+        let info = esc(r.time) + (r.person ? '　' + esc(r.person) : '');
+        if (r.qty !== '' && r.qty != null) info += '　' + esc(r.qty) + esc(s.unit) + diffText(plan, s, r.qty);
+        if (r.memo) info += '<br>' + esc(r.memo);
+        return `<li class="done"><span class="mark">✓</span><div class="box">
+          <div class="t">${esc(s.minor)}<span class="tag ok">完了</span></div><div class="info">${info}</div>
+          <button class="undo" data-undo="${esc(s.key)}">取り消す</button></div></li>`;
       }
-      return `<button class="step" data-do="${esc(s.key)}">${esc(s.minor)}<span class="desc">${esc(s.note)}</span></button>`;
+      const isNext = nx && nx.key === s.key;
+      return `<li class="${isNext ? 'cur' : 'todo'}"><span class="mark"></span><div class="box">
+        <div class="t">${esc(s.minor)}${isNext ? '<span class="tag now">次の作業</span>' : '<span class="tag ng">未完了</span>'}</div>
+        <div class="desc">${esc(s.note)}</div>
+        <button class="do" data-do="${esc(s.key)}">${esc(s.minor)}にする</button></div></li>`;
     }).join('');
-    return `<section class="major"><h2>${esc(m)}<span class="count">${pr.done} / ${pr.total}</span></h2>${items}</section>`;
+    return `<section class="major"><h2>${esc(m)}${head}</h2><ol class="tl">${items}</ol></section>`;
   }).join('');
 
   document.getElementById('app').innerHTML = `
@@ -217,7 +271,8 @@ function renderPlan(plan) {
           <dt>鉢上げ</dt><dd>${esc(plan.v['鉢上予定日'])}　${esc(plan.v['鉢上予定TR数'])}TR</dd>
         </dl>
       </div>
-      <div class="next ${nx ? '' : 'all'}">${nx ? '次の作業：<b>' + esc(nx.major) + '　' + esc(nx.minor) + '</b>' : 'すべての工程が完了しました'}</div>
+      ${stepperHtml(plan, false)}
+      <div class="next ${nx ? '' : 'all'}">${nx ? '次の作業：<b>' + esc(nx.major) + '　' + esc(nx.minor) + '</b>' : '✓ すべての工程が完了しました'}</div>
       ${sections}
       <div class="who">担当者：<b>${esc(getName() || '（未設定）')}</b> <button id="rename">変更</button></div>
     </main>`;
