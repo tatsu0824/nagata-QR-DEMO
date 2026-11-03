@@ -97,8 +97,6 @@
     background: #fff; color: var(--green); border: 2px solid var(--green); }
   .tl li.cur .do { background: var(--orange); border-color: var(--orange); color: #fff; padding: 14px; font-size: 17px; }
   .tl .undo { margin-top: 6px; font-size: 12px; color: var(--gray); background: none; border: none; text-decoration: underline; cursor: pointer; padding: 0; font-family: inherit; }
-  .who { margin-top: 18px; font-size: 13px; color: var(--gray); }
-  .who button { font-size: 13px; background: none; border: none; color: var(--green); text-decoration: underline; cursor: pointer; }
 
   /* 入力シート */
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: flex-end; justify-content: center; z-index: 10; }
@@ -114,6 +112,18 @@
   #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #222; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; max-width: 90%; }
   #toast.show { opacity: 1; }
   #toast.err { background: var(--red); }
+
+  /* 記録中のポップアップ（真ん中） */
+  #saving { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 30; }
+  #saving[hidden] { display: none; }
+  #saving .box { background: #fff; border-radius: 18px; padding: 26px 30px 22px; min-width: 230px; max-width: 86%; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
+  #saving .spin { width: 46px; height: 46px; margin: 0 auto 14px; border: 5px solid var(--green-l); border-top-color: var(--green); border-radius: 50%; animation: spin .8s linear infinite; }
+  #saving .mark { width: 54px; height: 54px; margin: 0 auto 12px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: bold; color: #fff; background: var(--green); }
+  #saving.err .mark { background: var(--red); }
+  #saving .msg { font-size: 18px; font-weight: bold; }
+  #saving .sub { font-size: 13px; color: var(--gray); margin-top: 6px; }
+  #saving button { margin-top: 14px; font-size: 15px; padding: 8px 22px; border-radius: 10px; border: 1px solid #ccc; background: #fff; font-family: inherit; }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -139,6 +149,7 @@
   </div>
 </div>
 <div id="toast"></div>
+<div id="saving" hidden><div class="box" id="saving-box"></div></div>
 
 <script>
 // QR から開いたときは ?id=QRID が付いている
@@ -277,7 +288,6 @@ function renderPlan(plan) {
       ${stepperHtml(plan, false)}
       <div class="next ${nx ? '' : 'all'}">${nx ? '次の作業：<b>' + esc(fullTask(nx, '　')) + '</b>' : '✓ すべての工程が完了しました'}</div>
       ${sections}
-      <div class="who">担当者：<b>${esc(getName() || '（未設定）')}</b> <button id="rename">変更</button></div>
     </main>`;
 
   document.querySelectorAll('[data-do]').forEach(b => b.onclick = () => openSheet(plan, state.steps.find(s => s.key === b.dataset.do)));
@@ -285,10 +295,6 @@ function renderPlan(plan) {
     const s = state.steps.find(x => x.key === b.dataset.undo);
     if (confirm('「' + taskName(s) + '」の完了を取り消しますか？')) send(plan, s, '取消', '', getName(), '');
   });
-  document.getElementById('rename').onclick = () => {
-    const v = prompt('担当者の名前', getName());
-    if (v !== null) { setName(v.trim()); render(); }
-  };
 }
 
 function diffText(plan, step, qty) {
@@ -325,10 +331,27 @@ function openSheet(plan, step) {
 
 function send(plan, step, action, qty, person, memo) {
   busy = true;
-  toast('記録しています…');
+  popup('wait', '記録しています…', '「' + taskName(step) + '」' + (action === '完了' ? 'の完了' : 'の取り消し') + '\n画面を閉じずにお待ちください');
   postRecord({ id: plan.id, major: step.major, minor: step.minor, op: action, qty: qty, person: person, memo: memo })
-    .then(s => { busy = false; state = s; render(); toast(action === '完了' ? '「' + taskName(step) + '」を完了にしました' : '取り消しました'); })
-    .catch(e => { busy = false; toast(e.message, true); });
+    .then(s => {
+      busy = false; state = s; render();
+      popup('ok', action === '完了' ? '「' + taskName(step) + '」を完了にしました' : '取り消しました', '');
+      setTimeout(() => popup(), 1500);
+    })
+    .catch(e => { busy = false; popup('err', '記録できませんでした', e.message); });
+}
+
+// 真ん中のポップアップ。kind：wait（くるくる）／ok（✓、少しして消える）／err（✕、閉じるボタン）。引数なしで閉じる
+function popup(kind, msg, sub) {
+  const el = document.getElementById('saving');
+  clearTimeout(popup.timer);
+  if (!kind) { el.hidden = true; return; }
+  el.className = kind;
+  document.getElementById('saving-box').innerHTML =
+    (kind === 'wait' ? '<div class="spin"></div>' : '<div class="mark">' + (kind === 'ok' ? '✓' : '✕') + '</div>') +
+    '<div class="msg">' + esc(msg) + '</div>' + (sub ? '<div class="sub">' + esc(sub).replace(/\n/g, '<br>') + '</div>' : '') +
+    (kind === 'err' ? '<button type="button" onclick="popup()">閉じる</button>' : '');
+  el.hidden = false;
 }
 
 // ---------- 画面の切り替え ----------
